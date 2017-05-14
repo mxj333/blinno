@@ -1,1 +1,3 @@
-baseurl: /jekyll_demo
+markdown: redcarpet
+baseurl: /blinno
+exclude: ['README.md']
