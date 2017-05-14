@@ -6,7 +6,7 @@ source: http://www.blinno.net
 category: php
 ---
 <h2>{{ page.title }}</h2>
-<p>{{ page.date | date_to_string }}</p>
+<p>{{ page.date | date: "%Y-%m-%d" }}</p>
 
 
 在mac上安装软件很爽，用brew就搞定了。现在纪录下，用brew安装php7。
