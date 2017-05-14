@@ -1,3 +1,2 @@
-markdown: redcarpet
 baseurl: /blinno
 exclude: ['README.md']

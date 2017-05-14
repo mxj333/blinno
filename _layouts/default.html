@@ -1,21 +1,34 @@
 <!DOCTYPE html>
-    <html>
-    <head>
-        <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>{{ page.title }}</title>
+
+        <!-- 最新版本的 Bootstrap 核心 CSS 文件 -->
+        <link rel="stylesheet" href="{{site.baseurl}}/css/bootstrap.min.css" >
+        <link rel="stylesheet" type="text/css" href="{{site.baseurl}}/css/common.css">
+                
     </head>
     <body>
-    	<h1>BLINNO Doc</h1>
-    	<nav>
-    		<ul>
-    			<li><a href="{{site.baseurl}}/index.html">Home</a></li>
-    			<li><a href="{{site.baseurl}}/linux.html">Linux</a></li>
-    			<li><a href="{{site.baseurl}}/mac.html">MAC</a></li>
-    			<li><a href="{{site.baseurl}}/php.html">PHP</a></li>
-    			<li><a href="{{site.baseurl}}/zabbix.html">ZABBIX</a></li>
-    			<li><a href="{{site.baseurl}}/other.html">OTHER</a></li>
-    		</ul>
-    	</nav>
+    <header>
+    	{% include nav.html navclass='nav-top' %}
+    </header>
+
+    <div class="container">
         {{ content }}
+    </div>
+
+    <footer class="footer">
+		<div class="container">
+			<p class="text-center">Copyright &copy; 2017 北京百灵创新科技有限公司, All Rights Reserved</p>
+		</div>
+	</footer>
+
+    <script src="https://cdn.bootcss.com/jquery/1.12.4/jquery.min.js"></script>
+    <!-- 最新的 Bootstrap 核心 JavaScript 文件 -->
+    <script src="{{site.baseurl}}/js/bootstrap.min.js"></script>
+
     </body>
 </html>
