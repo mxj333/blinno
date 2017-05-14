@@ -1,0 +1,11 @@
+---
+layout: default
+title: LINUX
+---
+<h2>{{ page.title }}</h2>
+<ul>
+    {% for post in site.categories.linux %}
+        <li>{{ post.date | date_to_string }} <a href="{{ site.baseurl }}{{ post.url }}">{{ post.title }}</a>
+        <p>{{post.meta}}</p></li>
+    {% endfor %}
+</ul>
