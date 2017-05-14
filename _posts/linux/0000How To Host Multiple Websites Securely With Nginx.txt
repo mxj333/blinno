@@ -1,0 +1,548 @@
+How To Host Multiple Websites Securely With Nginx And Php-fpm On Ubuntu 14.04
+=============================================================================
+
+
+介绍
+
+这是众所周知的LEMP栈（Linux的，Nginx的，MySQL和PHP）提供了无与伦比的速度和可靠性运行PHP站点。这个流行的堆栈的其它优点，如安全性和隔离都不太受欢迎，但在这篇文章中，我们会告诉你运行的网站LEMP不同的Linux用户的安全性和隔离的好处。这将通过创建不同的PHP-FPM池每个nginx的服务器模块（站点或虚拟主机）来完成。
+
+前提条件
+该指南已经过测试，在Ubuntu 14.4。所描述的安装和配置将在其它OS或OS的版本相似，但配置文件的命令和位置可以变化。
+
+它还假定您已经有nginx的和PHP-FPM成立。
+如果没有，请按照步骤之一，从文章的第三步如何在Ubuntu 14.4安装Linux，nginx的，MySQL和PHP（LEMP）的堆栈。
+
+所有本教程中的命令应作为一个非root用户。如果需要root访问权限的命令，它会在前面加上sudo的。如果你不已经有一个成立，按照本教程：使用Ubuntu 14.04初始服务器设置。
+
+您还需要一个完全限定域名（FQDN）指向液滴进行测试，除了默认的本地主机。如果你没有手头有一个，你可以使用site1.example.org。
+edit /etc/hosts中
+
+有你喜欢的编辑器, 类似这样的文件须藤的vim /etc/hosts文件，
+加入这一行（site1.example.org用，如果你正在使用它的FQDN）：
+
+
+/etc/hosts中
+...
+127.0.0.1 site1.example.org
+... 
+原因安全LEMP另外
+在一个共同的雷电电磁脉冲的设置有它运行所有的PHP脚本在同一个用户的所有网站只有一个PHP-fpm的游泳池。这带来两个主要问题：
+
+如果一个人的nginx服务器模块，即子域或独立的网站，在Web应用程序被攻破，所有在此液滴的网站就会受到影响了。攻击者能够读取的其他站点的配置文件，包括数据库的详细信息，甚至改变他们的文件。
+如果你想给你的液滴到一个站点的用户访问，你将几乎让他访问的所有网站。例如，你的开发人员需要工作的临时环境。但是，即使有非常严格的文件权限，你会仍然给了他访问的所有网站，包括你的主站，在同一个液滴。
+上述问题是通过创建不同的用户对每个站点运行不同的池解决在PHP-FPM。
+
+第1步 - 配置PHP-FPM
+如果你已经涵盖了先决条件，那么你应该已经在熔滴上一个功能的网站。除非您指定的FQDN它的自定义，你应该能够访问它在FQDN 本地主机本地或液滴远程的IP。
+
+现在，我们将创建第二个站点（site1.example.org）有自己的php-fpm的游泳池和Linux用户。
+
+让我们开始创建必要的用户。为了达到最佳的隔离，新用户应该有自己的群。所以首先创建用户组SITE1：
+
+须藤GROUPADD SITE1
+然后，请创建属于该组的用户站点1：
+
+须藤useradd的-g站点1站点1
+到目前为止，新用户SITE1没有密码，无法登录的液滴。如果你需要有人提供直接访问本网站的文件，那么你应该对这个用户的命令创建一个密码须藤passwd的站点1。随着新的用户名/密码组合，用户可以通过SSH或SFTP远程登录。欲了解更多信息和安全细节检查物品设置一个二级SSH / SFTP用户提供有限的目录的访问。
+
+接下来，创建一个新的PHP-FPM池站点1。在它的本质一个php-fpm的游泳池只是它运行在特定的用户/组并监听在Linux插座一个普通的Linux进程。它也可以监听的IP：端口组合太多，但这样做需要更多的液滴的资源，这不是首选的方法。
+
+默认情况下，在Ubuntu 14.04每一个PHP-FPM池应在目录中的文件配置/etc/php5/fpm/pool.d。与扩展的每个文件的.conf此目录中在php-fpm的全局配置是自动加载。
+
+因此，对于我们的新网站让我们创建一个新的文件/etc/php5/fpm/pool.d/site1.conf。为此，您可以使用您喜欢的编辑器是这样的：
+
+须藤VIM /etc/php5/fpm/pool.d/site1.conf
+此文件应包含：
+
+/etc/php5/fpm/pool.d/site1.conf
+[SITE1]
+ 用户=站点1 
+组= site1的
+听= /var/run/php5-fpm-site1.sock 
+listen.owner = WWW的数据
+listen.group = WWW的数据
+php_admin_value [disable_functions选项] = EXEC，中继了shell_exec，系统
+php_admin_flag [allow_url_fopen选项] =关闭
+PM =动态
+pm.max_children = 5
+pm.start_servers = 2
+pm.min_spare_servers = 1
+pm.max_spare_servers = 3
+CHDIR = /
+在上述配置中注意这些具体的选项：
+
+[站点1]是池的名称。对于每一个游泳池，你必须指定一个唯一的名称。
+用户和组立为Linux用户和新池将运行在该组。
+听应指向为每个池的独特位置。
+listen.owner和listen.group定义监听器的所有权，即新的PHP-FPM池的插座。Nginx的必须能够读取该插座。这就是为什么插座与用户和组在其下运行nginx的创建- WWW的数据。
+php_admin_value允许您设置自定义的PHP配置值。我们用它来 ​​禁用它可以运行Linux命令功能- EXEC，中继了shell_exec，系统。
+php_admin_flag类似于php_admin_value，但它仅仅是为布尔值，即打开和关闭的开关。我们将关闭PHP函数allow_url_fopen选项，允许PHP脚本来打开远程文件，并且可以使用攻击者。
+注：以上php_admin_value和php_admin_flag值可以全球范围内同样适用。然而，一个网站可能需要他们，这就是为什么在默认情况下，他们都没有配置。对PHP-FPM池的优点在于它可以让你微调每个站点的安全设置。此外，这些选项可用于任何其他的PHP设置，的安全范围之外，以进一步定制的站点的环境。
+
+在下午的选项是当前的安全话题之外，但你应该知道，他们允许您配置池的性能。
+
+该CHDIR选项应该是/这是文件系统的根。除非你使用另一种重要选择这不应该被改变的chroot。
+
+选项的chroot中不包含故意上述结构。这将允许你在监禁的环境中运行一个游泳池，即锁定的目录中。这是伟大的安全性，因为你可以锁定该网站的Web根目录内的游泳池。然而，这个最终的安全会造成严重的问题，因此，依赖于系统的二进制文件和应用，如ImageMagick的，这将不提供任何像样的PHP应用程序。如果您有进一步的这个话题感兴趣，请阅读文章如何使用Firejail建立一个WordPress安装在监禁的环境。
+
+一旦你完成上述配置重启PHP-FPM的新设置才能使用该命令的效果：
+
+须藤服务的php5-fpm的重启
+验证新池适当地寻找它的过程是这样运行的：
+
+的ps aux | grep的站点1
+如果你遵循了这里的确切的指示，你应该会看到类似的输出：
+
+SITE1    14042 0.0 0.8 133620 4208？小号14:45 0:00 PHP-FPM：池site1的
+ 站点1    14043 0.0 1.1 133760 5892？小号14:45 0:00 PHP-FPM：池SITE1
+在红色的是接下来的过程或PHP-FPM池运行用户 - SITE1。
+
+此外，我们将禁止由opcache提供的默认PHP缓存。这种特殊的缓存扩展可能是巨大的性能，但它不是安全性，我们将在后面看到。要禁用它编辑文件/etc/php5/fpm/conf.d/05-opcache.ini具有超级用户权限，并添加一行：
+
+/etc/php5/fpm/conf.d/05-opcache.ini
+opcache.enable = 0
+
+然后再次重新启动PHP-FPM（须藤服务的php5-FPM重启），使设置生效。
+
+第2步 - 配置nginx的
+一旦我们配置了PHP-FPM池为我们的网站，我们将配置nginx的服务器模块。为此，请创建一个新的文件在/ etc / nginx的/站点可用/ site1的用你喜欢的编辑器是这样的：
+
+须藤的vim的/ etc / nginx的/站点可用/ site1的
+此文件应包含：
+
+在/ etc / nginx的/站点可用/ site1的
+服务器 {
+    听80;
+
+    根的/ usr /股/ nginx的/网站/ site1的;
+    指数的index.php index.html的index.htm的;
+
+    SERVER_NAME site1.example.org;
+
+    位置 / {
+        try_files $ URI $ URI / = 404;
+    }
+
+    位置〜\的.php $ {
+        try_files $ URI = 404;
+        fastcgi_split_path_info ^（+ \ PHP的。）（/.+）$;
+        fastcgi_pass UNIX：/var/run/php5-fpm-site1.sock;
+        fastcgi_index index.php文件;
+        fastcgi_param SCRIPT_FILENAME $ DOCUMENT_ROOT $ fastcgi_script_name;
+        包括fastcgi_params;
+    }
+}
+上面的代码显示在nginx的服务器模块的常用配置。需要注意的有趣的突出部分：
+
+Web根目录是在/ usr /共享/ nginx的/网站/ site1的。
+服务器名称使用FQDN site1.example.org这是本文的先决条件提到的。
+fastcgi_pass指定的处理程序PHP文件。对于每一个网站，你应该使用不同的Unix套接字如/var/run/php5-fpm-site1.sock。
+创建Web根目录：
+
+须藤的mkdir在/ usr /共享/ nginx的/网站
+须藤的mkdir在/ usr /共享/ nginx的/网站/ site1的
+为了使上述网站，你必须在目录中创建一个符号链接它的/ etc / nginx的/站点启用/。这可以用命令来完成：
+
+须藤LN -s的/ etc / nginx的/站点可用/ site1的在/ etc / nginx的/站点启用/ site1的
+最后，重启nginx的为采取这样的效果的变化：
+
+须藤服务nginx的重启
+第3步 - 测试
+对于运行测试，我们将使用著名的phpinfo功能，它提供了关于PHP环境的详细信息。下创建文件名 ​​的文件info.php的其中只包含该行<PHP的phpinfo（）？; ？>。您将首先在默认的nginx网站及其网页根需要这个文件在/ usr /共享/ nginx的/ HTML /。出于这个目的，你可以使用这样一个编辑器：
+
+须藤VIM /usr/share/nginx/html/info.php
+之后，将文件复制到其他网站（site1.example.org）这样的Web根目录：
+
+须藤CP /usr/share/nginx/html/info.php的/ usr /股/ nginx的/网站/ site1的/
+现在，您可以运行最基础的测试来验证服务器用户。您可以使用浏览器或从液滴终端和猞猁，在命令行浏览器进行测试。如果您没有猞猁在你的雾滴然而，用命令安装命令和apt-get安装山猫。
+
+首先检查info.php的从默认的站点文件。它应该是在本地主机这样的访问：
+
+山猫--dump HTTP：//localhost/info.php | grep的“服务器\ [”USER“\]” 
+在上述命令中，我们筛选使用grep的输出只为变量SERVER [“用户”]它代表服务器用户。对于默认网站上的输出应显示默认的WWW的数据是这样的用户：
+
+_ SERVER [“用户”] WWW的数据
+同样，接下来的检查site1.example.org服务器用户：
+
+猞猁--dump http://site1.example.org/info.php | grep的“服务器\ [”USER“\]” 
+您应该看到这次在输出中site1的用户：
+
+_ SERVER [“用户”] SITE1
+如果您在每个PHP-FPM池的基础上作出的任何自定义的PHP设置，那么你也可以通过过滤您感兴趣的输出检查以上述方式及其对应的值。
+
+到目前为止，我们知道，我们的两个网站不同的用户下运行，但现在让我们来看看如何保护的连接。为了证明我们正在解决本文中的安全问题，我们将创建一个具有敏感信息的文件。通常这样的文件中包含的连接串到数据库和包括数据库用户的用户名和密码的细节。如果有人发现了这些信息，人是能够与相关网站做任何事情。
+
+用你喜欢的编辑器创建你的主站一个新的文件/usr/share/nginx/html/config.php。该文件应包含：
+
+/usr/share/nginx/html/config.php
+<？php的
+$传球=“秘密”;
+？>
+在上述文件中，我们定义了一个变量叫通持有的价值的秘密。当然，我们要限制访问此文件，所以我们将设置它的权限为400，这给只读访问文件的所有者。
+
+若要更改权限，以400运行以下命令：
+
+sudo的文件模式400 /usr/share/nginx/html/config.php
+此外，我们的主网站下的用户运行WWW的数据谁应该能够读取该文件。因此，更改文件，以这样该用户的所有权：
+
+须藤CHOWN WWW的数据：WWW的数据/usr/share/nginx/html/config.php
+在我们的例子中，我们将会使用另一个文件/usr/share/nginx/html/readfile.php读取机密信息，并打印出来。此文件应包含以下代码：
+
+/usr/share/nginx/html/readfile.php
+<？php的
+包括（“在/ usr /共享/ nginx的/ HTML / config.php文件”）;
+打印（$通行证）;
+？>
+更改此文件的所有权WWW的数据，以及：
+
+须藤CHOWN WWW的数据：WWW的数据/usr/share/nginx/html/readfile.php
+要确认所有权限和所有权是正确的，在网站根目录运行命令ls -l命令的/ usr /股/ nginx的/ HTML /。你应该会看到类似的输出：
+
+-r -------- 1 WWW的数据WWW的数据19年6月27日05:35的config.php
+-rw-R  -  R-- 1 WWW的数据WWW的数据68年6月21 16:31 readfile.php
+现在进入第二个文件上的默认站点命令山猫--dump HTTP：//localhost/readfile.php。你应该能够看到打印输出秘密这表明敏感信息的文件是相同的网站，这是预期的正确的行为中访问。
+
+现在将文件复制/usr/share/nginx/html/readfile.php你的第二个网站，site1.example.org是这样的：
+
+须藤CP /usr/share/nginx/html/readfile.php的/ usr /股/ nginx的/网站/ site1的/
+为了保持网站/用户关系的顺序，确保每个站点内的文件是由各自的网站的用户所拥有。通过改变新复制的文件SITE1用​​命令的所有权操作：
+
+须藤CHOWN站点1：SITE1 /usr/share/nginx/sites/site1/readfile.php
+要确认您已设置正确的权限和文件的所有权，请列出site1的Web根目录中的内容与命令ls -l命令的/ usr /股/ nginx的/网站/站点1 /。您应该看到：
+
+-rw-R  -  R-- 1站点1站点1 80 6月21日16:44 readfile.php
+然后尝试访问从site1.example.com同一个文件，命令山猫--dump http://site1.example.org/readfile.php。你只会看到空白返回。此外，如果您搜索的nginx的和grep命令的错误日志错误须藤的grep错误/var/log/nginx/error.log您将看到：
+
+2015年6月30日十​​五点15分13秒[错误] 894＃0：“PHP消息：：PHP的警告：在标准错误* 242的FastCGI发送包括（/usr/share/nginx/html/config.php）：未能打开流：权限被拒绝在/usr/share/nginx/sites/site1/readfile.php第2行
+
+注意：您也将看到一个类似的错误在山猫输出，如果你的display_errors设置为开在PHP-fpm的配置文件/etc/php5/fpm/php.ini。
+
+该警告表明，从site1.example.org站点脚本无法读取敏感文件的config.php从主站点。因此，它在不同的用户运行的站点不能妥协彼此的安全。
+
+如果你回到本文的配置部分的最后，你会看到我们已经禁用opcache提供的默认的缓存。如果你是好奇，为什么，尝试用超级用户权限设置再次启用opcache opcache.enable = 1在文件/etc/php5/fpm/conf.d/05-opcache.ini并重新启动PHP5-FPM用命令sudo的服务的php5-fpm的重启。
+
+令人惊讶的是，如果你再次运行在完全相同的顺序测试步骤，你就可以不管它的所有权和权限来读取敏感文件。在opcache此问题已报告了很长时间，但这篇文章的时候它没有确定。
+
+结论
+从安全角度来看这是必须使用PHP-FPM池使用不同的用户对每个站点相同的Nginx Web服务器上。即使它带有一个小的性能损失，这种隔离的利益可以防止严重的安全漏洞。
+
+本文中介绍的想法是不是唯一的，这是目前其他同类PHP隔离技术，如SuPHP。然而，所有其他替代品的性能要比PHP-FPM的差很多。
+
+
+心
+17 订阅
+ 分享
+9643590703f4c6d20861009ec73d1d4145a945b0  
+作者：
+阿纳托利·季米特洛夫 D67be84c5e0a20b4c1cdb360319cdf4b5d9df7f6
+ 
+编辑：
+泰米福克斯
+自旋向上的SSD云服务器在一分钟内。
+简单设置。完全的根访问。简单的定价。
+部署服务器
+相关教程
+如何部署在Ubuntu 14.04一个Clojure的Web应用程序
+如何在Ubuntu 14.04安装WordPress和phpMyAdmin的使用泊坞窗撰写
+如何在CentOS 7安装Elasticsearch 1.7，Logstash 1.5，Kibana 4.1（ELK堆栈）
+如何在Ubuntu 14.04安装Elasticsearch 1.7，Logstash 1.5，Kibana 4.1（ELK堆栈）
+如何解决常见ELK堆栈问题
+26评论
+乙一世ULOL链接码突出表
+
+Leave a comment...
+登录后发表评论
+atexun
+atexun 2015年7月2日
+非常感谢你对张贴本阿纳托利！我今天上午刚刚结束，通过本教程https://www.digitalocean.com/community/tutorials/how-to-setup-fastcgi-caching-with-nginx-on-your-vps设置缓存，一切都很好。我有收到第二个站点工作的问题。现在我已经跟着你出色的职位，有第二个网站，但我仍然有一个问题。我用time.php测试从第一个教程，也未能在第二个站点。
+
+Specfically我不得不注释掉以下3行获得nginx的configtest以成功完成。
+
+这2个服务器组的上方：
+
+fastcgicachepath的/ etc / nginx的/三级缓存= 1：2 keys_zone = MYAPP：百米无效=60米; fastcgicachekey“$计划$ requestmethod $主机$ requesturi”;
+而这一次的位置〜.PHP $指令：
+
+fastcgi_cache MYAPP;
+我试图改变MYAPP为第二现场，但没有喜悦独特的价值。你能帮忙吗？
+
+谢谢，有一个伟大的日子！
+
+ 
+ 9643590703f4c6d20861009ec73d1d4145a945b0
+tollodim 2015年7月2日
+嗨atexun，
+
+我很高兴你喜欢的文章。
+
+至于你的问题，你看到一个错误，当你在nginx的运行configtest？
+
+对于一个初请尽量为每个站点创建为指令fastcgicachepath不同的目录。
+
+1  
+ NormalizeWeb
+NormalizeWeb 2015年7月9日
+阿纳托利，谢谢你的职位。有了这个参考我可以安装在Ubuntu或电气特性的兼容的操作系统Apache Web服务器和托管多个Java站点或者PHP的网站，如果是这样，他们指出具有不同域名。请告诉我。
+
+谢谢。
+
+ 
+ 9643590703f4c6d20861009ec73d1d4145a945b0
+tollodim 2015年7月9日
+嗨，
+
+上面的教程是特别为PHP。
+
+如果你想运行Java，那么它是一个有点不同。
+
+ 
+ NormalizeWeb
+NormalizeWeb 2015年7月9日
+[删除]
+
+ 
+ NormalizeWeb
+NormalizeWeb 2015年7月9日
+[删除]
+
+ 
+ NormalizeWeb
+NormalizeWeb 2015年7月9日
+谢谢你的回复 ！所以，我理解的配置会有所不同，但我可以承载的Apache服务器上有多个PHP网站（话说回来的配置是不同的）和同一液滴内点多个域名。请告诉我。
+
+谢谢。
+
+ 
+ 9643590703f4c6d20861009ec73d1d4145a945b0
+tollodim 2015年7月12日
+亲爱的NormalizeWeb，
+
+上述文章是nginx的Web服务器而不是Apache的。
+
+无论如何，问题的答案是肯定的:)请查看这篇文章的详细信息：
+
+https://www.digitalocean.com/community/tutorials/how-to-set-up-apache-virtual-hosts-on-ubuntu-14-04-lts
+
+ 
+ NormalizeWeb
+NormalizeWeb 2015年7月13日
+谢谢@tollodim！感谢您的帮助。
+
+嘿，我有一个关于DO API几个问题。
+
+我想与DO的API集成转售其产品。那么，什么是我应该照顾整体的关键问题。
+之后帐户创建的每个液滴具有终端窗口（黑屏），其中用户可以执行操作系统命令。是否API提供了这个功能。
+由于我启动我需要在处理客户请求支持和技术支持方面有什么具体的资源。
+请告诉我。
+
+谢谢。
+
+ 
+ PhilAlamri
+PhilAlamri 2015年7月13日
+你是英雄阿纳托利。感谢你把写这篇文章的时候！
+
+我有一个问题，这是愚蠢的，因为我从来没有处理Apache和NGINX没有控制面板在我的生活。这对Linux的，但！
+
+我的大部分网站的工作已经完成IIS和Windows服务器上，我大量使用PHP应用程序在那里。
+
+前两天，我已经开始尝试NGINX，并开始阅读大量的文档资料。这似乎是1000英哩路，但我会坚持下去。
+
+这些问题是：
+
+什么是配置文件？我有多个人，是它从我了解的IIS或的cPanel“添加一个新的网站相当于”？
+通过你的雷电电磁脉冲的堆栈将只显示* .PHP和的* .htm安装NGINX（根目录，没有添加主机名尚未）。为什么不服务的* .js和*的CSS默认情况下，我必须设置一定的设置，使MIME文件活跃？
+非常感谢！！
+
+ 
+ 9643590703f4c6d20861009ec73d1d4145a945b0
+tollodim 2015年7月14日
+亲爱的PhilAlamri。
+
+感谢您的客气话。
+
+该问题的答案是：
+
+配置文件可以被视为等同在IIS中的“添加新网站”。你想保持每一个新网站的配置在一个新的文件，使之更加直观，并保持一个订单。虽然你可以只用一个配置文件中。诀窍是一个配置文件可以包含或加载其他人，因此它只是作为编程 - 你可以写所有的代码在一个文件中或在很多:)
+该规范*。PHP文件意味着它们需要特殊处理的PHP解释器。你可以服务器的任何扩展，而无需显式地列出它。
+祝你好运的Nginx和Linux！
+
+ 
+ colshrapnel
+colshrapnel 2015年8月9日
+你好阿纳托利
+。谢谢你的教程
+。我想用它来 ​​建立一个服务器，但与遇到的问题
+当试图加载任何静态文件，我总是gettting（13：权限被拒绝）错误。
+这是否意味着我必须给nginx的对文件的读访问，通过将用户添加到组WWW的数据的手段？
+
+ 
+ 9643590703f4c6d20861009ec73d1d4145a945b0
+tollodim 2015年8月10日
+嗨Colshrapnel，
+
+如果你想nginx的只是阅读您的文件，您可以更改文件的权限为644：
+
+sudo的文件模式644 /路径/到/的/文件/ / -R问题
+
+上面的并不总是一个好的选择，因为你将无法上传文件的Web应用程序。
+
+另一种选择是改变文件到WWW的数据的所有权。你可以做到这一点的：
+
+须藤CHOWN WWW：数据/路径/到/的/文件/ / -R问题
+
+这将允许您还上传文件。其缺点是，你的普通用户可能无法对任何更改这些文件不再......除非他们有777权限。
+
+最后，你可以尝试将您的用户WWW的数据组，反之亦然。在这种情况下，你必须设置每个文件/目录的组权限来读 - 写 - 执行（RWX）。
+
+ 
+ AndreiD
+AndreiD 2015年11月11日
+我认为这是其他方式。
+
+你想nginx的用户，WWW 的数据，是部分站点1组，以便它可以访问它的资源。如果添加站点1到WWW的数据那么你就不会再孤立和site1的访问另一组的资源。
+
+所以，你想要做的是：usermod 命令-ag [网站用户] [网络服务器组]
+
+有了这个，你现在可以CHOWN站点1：SITE1 -R SITE_PATH并设置文件755权限迪尔斯和644，其用意就是让组（即WWW的数据）刚刚看了。
+
+认为这是正确的:) ...希望它帮助。
+
+ 
+ pengux
+pengux 2015年8月16号
+是否有任何其他的PHP缓存，您可以使用此设置，而不是opcache使用？
+
+ 
+ 9643590703f4c6d20861009ec73d1d4145a945b0
+tollodim 2015年8月16日
+嗨Pengux，
+
+您可以尝试的memcache：
+
+https://www.digitalocean.com/community/tutorials/how-to-install-and-use-memcache-on-ubuntu-14-04
+
+ 
+ ihor.vorotnov
+ihor.vorotnov 二○一五年十月二十四日
+内存缓存（和Redis的）为对象缓存，opcache是​​操作码缓存。您可以将通过内存缓存在内存中的一些数据块（DB结果，计算的数据块，甚至html页面等），但opcache是​​不同的 - 这是PHP引擎的一部分，它预先编译你的PHP脚本转换成二进制代码，以便他们来代替原始的PHP文件。如果没有opcache，PHP重新编译他们PN每一个请求（这就是为什么你得到opcache性能提升）。因此，memcache的是不是一个替代品，它是一个辅助工具。同时使用将会使你的应用程序要快得多。您可以使用APC（也就是，实际上opcache + memcache的模拟，2合1）更换opcache。但是，我没有用了多年，不知道这是否是最新的，并兼容最新的PHP版本。谷歌知道。也许甚至还有新水木清华在这方面。
+
+ 
+ shealyw2
+shealyw2 2015年8月20号
+感谢这个美好的教程阿纳托利。我有一个问题，虽然。什么将我的权限是在站点1的文件呢？他们会是nginx的用户，或者他们会site1的用户？或者，也增加站点1到nginx的用户组，并给该组的权限实际上是足够了吗？
+
+谢谢。
+
+ 
+ 9643590703f4c6d20861009ec73d1d4145a945b0
+tollodim 2015年8月21日
+嗨Shealyw2，
+
+所有site1的文件和目录，应该由site1的用户所拥有。对于具有敏感信息的文件，如密码，权限应只允许用户读取那些文件（400）。
+
+如果它是一个PHP文件，所述Web服务器不需要能够读取该文件。只有PHP-FPM将处理.php文件。因此700，600或400权限的罚款 ​​。对于剩下的文件，你将不得不放弃权限的网络用户通过该文件设置为* 5或* 7。或者，您可以添加站点1到nginx的组，然后将权限更改为5或7。
+
+请查看本教程的测试部分以获得更多信息。
+
+ 
+ svkurowski
+svkurowski 2015年9月3日
+请注意，在Nginx的配置中包括fastcgi_params;线应首先调用fastcgi_param ...;。
+在这个例子中配置此行是最后一个，因此PARAMS先前设置的（在这种情况下，所有的FastCGI SCRIPT_FILENAME）将被覆盖中指定的值 fastcgi_params。 请修正的例子。
+
+我发现这一点的同时追捕，其中PHP5-FPM不会弥补由于操作码缓存更新的符号链接的错误。我可以通过插入以下行Nginx的配置来解决这个问题：
+
+fastcgi_param SCRIPT_FILENAME $ realpath_root $ fastcgi_script_name;
+fastcgi_param DOCUMENT_ROOT $ realpath_root;
+（服务器的根是一个符号链接的子目录就像是部署Web应用程序时常见）
+
+起初我还插入这些行之前，包括fastcgi_params;，没有工作。将它们移动到下面的包容固定我的问题。
+
+除此之外，本教程是真正的帮助。谢谢！
+
+ 
+ DigitFreak
+DigitFreak 2015年9月12日
+组的权限，我应该发给/路径/要/ site1的：哪些用户？
+它在默认情况下根：根，因为我们正在做的root帐户下。虽然，一切运行顺利，但PHP不能修改任何文件。有任何想法吗？
+
+ 
+ 9643590703f4c6d20861009ec73d1d4145a945b0
+tollodim 2015年9月12号
+[删除]
+
+ 
+ 9643590703f4c6d20861009ec73d1d4145a945b0
+tollodim 2015年9月12号
+您应该设置路径/ /的所有权/ site1的，以你为这个PHP-FPM池指定的用户。如果你已经按照文章，这应该是user1的。
+
+ 
+ DigitFreak
+DigitFreak 2015年9月12日
+你的意思是SITE1？
+
+[SITE1]
+用户= SITE1
+组= SITE1
+听= /var/run/php5-fpm-site1.sock
+listen.owner = WWW的数据
+listen.group = WWW的数据
+php_admin_value [disable_functions选项] = EXEC，中继了shell_exec，系统
+php_admin_flag [allow_url_fopen选项] =关闭
+PM =动态
+pm.max_children = 5
+pm.start_servers = 2
+pm.min_spare_servers = 1
+pm.max_spare_servers = 3
+CHDIR = /
+
+ 
+ 9643590703f4c6d20861009ec73d1d4145a945b0
+tollodim 2015年9月12号
+是的，请将文件到site1的用户所有权。
+
+ 
+ DigitFreak
+DigitFreak 2015年9月12日
+[删除]
+
+ 
+ DigitFreak
+DigitFreak 2015年9月12日
+文件的所有权变更到站点1和它现在的工作。谢谢！:)
+
+ 
+ danthony1981
+danthony1981 二○一五年十一月十四日
+感谢您一个美妙的指南！
+
+Opcache现在工作得很好。
+
+ 
+ anderson436240
+anderson436240 二〇一五年十一月十九日
+在此之后的设置，
+我有：
+
+/var/www/site1.com拥有的站点1：SITE1
+/var/www/site2.com拥有的站点2：站点2
+但我有一个基于SSH密钥登录，让我们说超级用户，当我使用SFTP不能编辑这些文件。我可以对其进行编辑时，我的所有权变更到超级用户：超级用户，自然，但后来我的WordPress的安装不能上传/删除插件。
+
+难道这些不兼容的目标是什么？我没有设置站点1：SITE1用​​户的密码，我只想让他们单独为您介绍的安全方面的原因，我想超级管理员管理文件。
+
+我没有太多的成功与添加超级用户到我的站点1组。
+
+ 
+ 9643590703f4c6d20861009ec73d1d4145a945b0
+tollodim 二○一五年十一月二十零号
+你可以通过复制根SSH密钥双方用户解决你的问题。然后你就可以用这些用户不使用密码进行身份验证。
+
+ 
+ 创作共用许可
+这项工作是根据许可知识共享署名-非商业性使用-相同方式共享4.0国际许可。
+版权所有©2015年DigitalOcean™公司
+社区 教程 问题 工程 标签 RSS  
+条款，保密，及版权 安全 报告bug 得到报酬写
+
+ 

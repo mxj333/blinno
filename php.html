@@ -5,7 +5,10 @@ title: PHP
 <h2>{{ page.title }}</h2>
 <ul>
     {% for php in site.categories.php %}
-        <li>{{ php.date | date_to_string }} <a href="{{ site.baseurl }}{{ php.url }}">{{ php.title }}</a>
-        <p>{{php.meta}}</p></li>
+        <li>
+        	{{ php.date | date: "%Y-%m-%d" }} 
+        	<a href="{{ site.baseurl }}{{ php.url }}">{{ php.title }}</a>
+        	<p>{{php.meta}}</p>
+        </li>
     {% endfor %}
 </ul>

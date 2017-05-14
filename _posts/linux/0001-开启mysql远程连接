@@ -1,0 +1,168 @@
+开启mysql远程连接
+===========================
+第一步：
+
+vim /etc/mysql/my.cnf找到bind-address = 127.0.0.1
+
+注释掉这行，如：#bind-address = 127.0.0.1
+
+或者改为： bind-address = 0.0.0.0
+
+允许任意IP访问；
+
+或者自己指定一个IP地址。
+
+重启 MySQL：sudo /etc/init.d/mysql restart
+
+第二步：
+
+授权用户能进行远程连接
+grant all privileges on *.* to 'admin'@'localhost' identified by 'mysql@jsq@@)!%';
+flush privileges;
+
+
+本地
+grant all privileges on *.* to 'admin'@'localhost' identified by 'mysql@jsqtech.com@)!$';
+flush privileges;
+--------------------------------
+grant all privileges on *.* to 'djp'@'localhost' identified by '123456';
+flush privileges;
+
+--------------------------------
+grant all privileges on *.* to 'blinno'@'localhost' identified by '12345*';
+flush privileges;
+
+------------------------
+grant all privileges on *.* to 'digital'@'localhost' identified by 'digital';
+flush privileges;
+
+-------------------
+
+grant all privileges on *.* to 'app'@'localhost' identified by 'appqazwsx';
+flush privileges;
+
+--------------------------
+grant all privileges on *.* to 'oids'@'%' identified by 'm123456*' with grant option;
+flush privileges;
+
+
+
+grant all privileges on dcmms.* to 'dcmms'@'%' identified by 'm123456*' with grant option;
+flush privileges;
+
+
+--------------------------
+
+grant all privileges on *.* to 'oids'@'%' identified by 'Mxj-19760303*';
+flush privileges;
+
+--------------------------
+grant all privileges on *.* to 'oids'@'localhost' identified by 'm123456*';
+flush privileges;
+
+--------------------------
+grant all privileges on jgwf.* to 'jgwf'@'%' identified by 'admin@123456';
+flush privileges;
+
+
+--------------------------
+grant all privileges on *.* to 'home'@'%' identified by 'home<>user<>';
+flush privileges;
+
+--------------------------
+grant all privileges on s554796db0.* to 's554796db0'@'%' identified by 'ww5845277';
+flush privileges;
+
+--------------------------
+grant all privileges on cakebox.* to 'cakebox'@'%' identified by 'secret';
+flush privileges;
+
+
+--------------------------
+grant all privileges on cakebox.* to 'cakebox'@'%' identified by 'secret';
+flush privileges;
+
+===========================
+第一行命令解释如下，*.*：第一个*代表数据库名；第二个*代表表名。这里的意思是所有数据库里的所有表都授权给用户。root：授予root账号。“%”：表示授权的用户IP可以指定，这里代表任意的IP地址都能访问MySQL数据库。“password”：分配账号对应的密码，这里密码自己替换成你的mysql root帐号密码。
+
+第二行命令是刷新权限信息，也即是让我们所作的设置马上生效。
+
+
+
+
+
+
+==========================================================
+Install phpMyAdmin
+----------------------------
+MySQL實在不太熟的人，可以利用phpMyAdmin來用網頁管理MySQL，直覺的GUI讓作業方便許多:
+
+
+*************************************************
+sudo apt-get install php5 libapache2-mod-php5 -y 
+
+*************************************************
+
+
+ -------------------------------------------------
+
+
+sudo apt-get install phpmyadmin -y
+
+之後就是問你密碼，還有一些設定，直接Yes下一步。
+
+接著要產生一個phpMyAdmin捷徑給html根目錄
+
+sudo ln -s /usr/share/phpmyadmin /usr/share/nginx/html
+
+sudo ln -s ~/zencms /usr/share/nginx/html
+
+還有一些安全性設定，之後重啟服務
+sudo php5enmod mcrypt
+sudo service php5-fpm restart
+
+==========================================================
+
+nginx 的友好网址
+nginx 不像 Apache 那样使用 .htaccess 文件，所以必须在站点的配置中创建这些重写网址。 根据你的设置，你要修改这个(配置)，不过至少你要让 PHP 作为 FastCGI 实例来运行。
+
+server {
+    listen   80;
+    server_name www.example.com;
+    rewrite ^(.*) http://example.com$1 permanent;
+}
+
+server {
+    listen   80;
+    server_name example.com;
+
+    # root directive should be global
+    root   /var/www/example.com/public/app/webroot/;
+    index  index.php;
+
+    access_log /var/www/example.com/log/access.log;
+    error_log /var/www/example.com/log/error.log;
+
+    location / {
+        try_files $uri $uri/ /index.php?$args;
+    }
+
+    location ~ \.php$ {
+        try_files $uri =404;
+        include /etc/nginx/fastcgi_params;
+        fastcgi_pass    127.0.0.1:9000;
+        fastcgi_index   index.php;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+    }
+}
+
+=============================================
+
+
+=============================================
+
+
+=============================================
+
+
+=============================================
