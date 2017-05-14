@@ -1,2 +1,2 @@
-baseurl: http://www.blinno.net
+baseurl: /blinno
 exclude: ['README.md']
