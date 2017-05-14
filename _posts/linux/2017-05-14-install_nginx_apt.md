@@ -5,6 +5,10 @@ meta: For Debian/Ubuntu, in order to authenticate the nginx repository signature
 source: http://www.blinno.net
 category: linux
 ---
+<h2>{{ page.title }}</h2>
+<p>{{ page.date | date: "%Y-%m-%d" }}</p>
+
+
 1、
 For Debian/Ubuntu, in order to authenticate the nginx repository signature and to eliminate warnings about missing PGP key during installation of the nginx package, it is necessary to add the key used to sign the nginx packages and repository to the apt program keyring. Please download this key from our web site, and add it to the apt program keyring with the following command:
 ```
