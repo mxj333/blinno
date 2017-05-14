@@ -1,2 +1,2 @@
-baseurl: /blinno
+baseurl: /
 exclude: ['README.md']
