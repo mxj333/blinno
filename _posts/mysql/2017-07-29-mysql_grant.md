@@ -1,7 +1,7 @@
 ---
 layout: default
 title: 开启mysql远程连接
-meta: 在ubuntu 开启mysql远程连接
+meta: 在Linux下开启mysql远程连接
 source: http://www.blinno.net
 category: mysql
 ---
