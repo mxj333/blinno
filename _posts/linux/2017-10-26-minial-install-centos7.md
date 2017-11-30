@@ -73,6 +73,27 @@ lo     loopback  未管理  --
 ```        
 把ONBOOT=no改为ONBOOT=yes， 改好的内容为：
 ```
+TYPE=Ethernet
+BOOTPROTO=static
+DEFROUTE=yes
+IPV4_FAILURE_FATAL=no
+IPV6INIT=yes
+IPV6_AUTOCONF=yes
+IPV6_DEFROUTE=yes
+IPV6_FAILURE_FATAL=no
+IPV6_ADDR_GEN_MODE=stable-privacy
+NAME=ens33
+UUID=19743b34-02cc-47f9-9203-3401481c05bd
+DEVICE=ens33
+ONBOOT=yes
+IPADDR=192.168.1.5
+NETMASK=255.255.255.0
+GATEWAY=192.168.1.253
+DNS=192.168.1.253
+PROXY_METHOD=none
+BROWSER_ONLY=no
+PREFIX=24
+DNS1=192.168.1.253
 
 ```
 
@@ -86,7 +107,28 @@ systemctl restart network.service
         vi /etc/sysconfig/network-scripts/ifcfg-ens32
 ```        
 把ONBOOT=no改为ONBOOT=yes， 改好的内容为：
+
 ```
+TYPE=Ethernet
+BOOTPROTO=static
+DEFROUTE=yes
+PEERDNS=yes
+PEERROUTES=yes
+IPV4_FAILURE_FATAL=no
+IPV6INIT=yes
+IPV6_AUTOCONF=yes
+IPV6_DEFROUTE=yes
+IPV6_PEERDNS=yes
+IPV6_PEERROUTES=yes
+IPV6_FAILURE_FATAL=no
+IPV6_ADDR_GEN_MODE=stable-privacy
+NAME=ens32
+UUID=087e6cd3-fe16-40ff-a477-cef1347e066c
+DEVICE=ens32
+ONBOOT=yes
+IPADDR=192.168.0.30
+NETMASK=255.255.255.0
+
 ```
 
 在上图中，“NM_CONTROLLED=no”表示该接口将通过该配置文件进行设置，而不是通过网络管理器进行管理。
